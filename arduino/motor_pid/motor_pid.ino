@@ -17,11 +17,11 @@ typedef struct
   int32_t  counter;
 
   int32_t  speed;
-  int32_t  start_counter;  
+  int32_t  start_counter;
 
-  int32_t  on_time;  
+  int32_t  on_time;
   uint32_t start_time;
-  
+
   double   pwm_out;
 
   uint8_t  enc_pin[2];
@@ -32,21 +32,21 @@ typedef struct
 motor_t motor;
 
 
-void setup() 
+void setup()
 {
   motor.counter = 0;
   motor.on_time = 8000;
   motor.speed = 0;
   motor.pwm_out = 0;
-  motor.enc_pin[0] = 2;
-  motor.enc_pin[1] = 4;
-  motor.mot_pin[0] = 5;
-  motor.mot_pin[1] = 6;
+  motor.enc_pin[0] = 3;
+  motor.enc_pin[1] = 7;
+  motor.mot_pin[0] = 9;
+  motor.mot_pin[1] = 10;
 
-
+  
   pinMode(motor.enc_pin[0], INPUT_PULLUP);
   pinMode(motor.enc_pin[1], INPUT_PULLUP);
-  
+
   attachInterrupt(digitalPinToInterrupt(motor.enc_pin[0]), motor_isr, CHANGE);
 
   analogWrite(motor.mot_pin[0], 0);
@@ -63,7 +63,7 @@ void setup()
   Serial.begin(115200);
 }
 
-void loop() 
+void loop()
 {
   static uint8_t state = 0;
   static uint32_t pre_time = millis();
@@ -72,7 +72,7 @@ void loop()
   static uint8_t  pwm = 0;
   static uint32_t pre_time_pid = millis();
 
-  
+
 
 
   switch(state)
@@ -82,7 +82,7 @@ void loop()
       {
         pre_time_delay = millis();
         state = 1;
-        goal_speed = 5;        
+        goal_speed = 5;
       }
       break;
 
@@ -91,7 +91,7 @@ void loop()
       {
         pre_time_delay = millis();
         state = 2;
-        goal_speed = 10;                
+        goal_speed = 10;
       }
       break;
 
@@ -100,7 +100,7 @@ void loop()
       {
         pre_time_delay = millis();
         state = 3;
-        goal_speed = 15;                
+        goal_speed = 15;
       }
       break;
     case 3:
@@ -108,7 +108,7 @@ void loop()
       {
         pre_time_delay = millis();
         state = 4;
-        goal_speed = 20;                
+        goal_speed = 20;
       }
       break;
     case 4:
@@ -116,7 +116,7 @@ void loop()
       {
         pre_time_delay = millis();
         state = 5;
-        goal_speed = 25;        
+        goal_speed = 25;
       }
       break;
     case 5:
@@ -124,21 +124,21 @@ void loop()
       {
         pre_time_delay = millis();
         state = 5;
-        goal_speed = 0;        
+        goal_speed = 0;
       }
       break;
   }
-  
-  enc_speed = (double)motor.speed;  
+
+  enc_speed = (double)motor.speed;
   if (motorPID.Compute() == true)
   {
     pwm = constrain(pwm_output, 0, 255);
-    
+
     if (goal_speed == 0) pwm = 0;
     analogWrite(motor.mot_pin[0], pwm);
     //analogWrite(motor.mot_pin[0], 50);
   }
-    
+
   // Encoder Speed Update
   if (millis()-pre_time >= 10)
   {
@@ -161,32 +161,32 @@ void loop()
     //Serial.print(motor.pwm_out);
     //Serial.print(pwm);
     Serial.print("  ");
-    //Serial.println(motor.counter);    
+    //Serial.println(motor.counter);
     //Serial.println(err);
-    Serial.println();    
+    Serial.println();
   }
 
 }
 
 
 void motor_isr(void)
-{  
+{
   motor_enc_count();
 }
 
 void motor_enc_count(void)
 {
   uint8_t enc_bit = 0;
-  
+
     if (digitalRead(motor.enc_pin[0]) == HIGH)
     {
-      motor.on_time = micros() - motor.start_time;      
+      motor.on_time = micros() - motor.start_time;
       motor.start_time = micros();
       enc_bit |= (1<<0);
     }
     else
     {
-      
+
     }
     if (digitalRead(motor.enc_pin[1]) == HIGH)
     {
@@ -203,5 +203,5 @@ void motor_enc_count(void)
       default:
         motor.counter++;
         break;
-    }  
+    }
 }
