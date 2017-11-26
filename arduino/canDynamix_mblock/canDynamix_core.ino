@@ -48,7 +48,7 @@ static uint32_t tTime[4];
 MedianFilter sonic_filter(16, 0);
 #define sonic_trigger_pin  A0 //Trig pin
 #define sonic_echo_pin     A1 //Echo pin
-
+long     distance_mm;
 
 /*******************************************************************************
 * Declaration for MPU9250
@@ -59,15 +59,19 @@ Madgwick filter;
 float acc_cal[3];
 float gyro_cal[3];
 
-void a()
+void imuCalibration(void);
+void updateMPU9250(void);
+void updateSonic(void);
+
+
+/*******************************************************************************
+* Declaration for mblock
+*******************************************************************************/
+void mblockRead(mblcok_packet_t *p_packet, uint8_t device);
+void mblockRun(mblcok_packet_t *p_packet, uint8_t device);
+
+void setup()
 {
-
-}
-
-
-void setup() 
-{
-
   motorBegin();
   Serial.begin(115200);
 
@@ -84,6 +88,8 @@ void setup()
   imuCalibration();
 
   mblockBegin(115200);
+  mblockSetReadCallback(mblockRead);
+  mblockSetRunCallback(mblockRun);  
 }
 
 void loop() {
@@ -101,7 +107,7 @@ void loop() {
   {
     tTime[2] = millis();
    
-    //updateSonic();
+    updateSonic();
   }
 
   mblockUpdate();
@@ -114,7 +120,7 @@ void loop() {
 void updateSonic(void)
 {
   uint32_t duration;
-  long     distance_mm;
+  
 
   digitalWrite(sonic_trigger_pin, LOW);
   delayMicroseconds(2);
@@ -216,4 +222,135 @@ void imuCalibration(void)
     gyro_cal[axis] /= (float)cal_count;
   }
   acc_cal[2] = 0;
+}
+
+
+void mblockRead(mblcok_packet_t *p_packet, uint8_t device)
+{
+  float value=0.0;
+  int port,slot,pin;
+
+  port = p_packet->port;
+  pin = port;
+
+
+  switch(device)
+  {
+    case  GYRO:
+      break;
+    case  VERSION:
+      break;
+    case  DIGITAL:
+      pinMode(pin,INPUT);
+      mblockSendFloat(digitalRead(pin));
+      break;
+
+    case  ANALOG:      
+      //pinMode(pin,INPUT);
+      if (pin == 0)
+      {
+        mblockSendFloat(distance_mm);
+      }
+      break;
+
+    case  PULSEIN:
+      break;
+
+    case TIMER:
+      mblockSendFloat((float)millis());
+      break;
+  }
+}
+
+void mblockRun(mblcok_packet_t *p_packet, uint8_t device)
+{
+  int port = p_packet->port;
+  int pin  = port;
+  int val;
+  int val1;
+  int v;
+  int v1;
+  int leftSpeed;
+  int rightSpeed;
+  int hz;
+  int ms;
+
+
+  switch(device)
+  {
+    case MOTOR:
+      leftSpeed  = mblockReadBuffer(6);
+      rightSpeed = mblockReadBuffer(7);
+      if(leftSpeed >= 200) { leftSpeed  = -(256-leftSpeed);  }
+      if(rightSpeed >= 200){ rightSpeed = -(256-rightSpeed); }
+      motorMoveSpeed(leftSpeed, rightSpeed);
+      break;
+   
+    case JOYSTICK:
+      break;
+
+    case ENCODER:
+      break;
+
+    case RGBLED:
+      break;
+    case SERVO:
+      break;
+
+    case LED:
+      v  = mblockReadBuffer(6);
+      v1 = mblockReadBuffer(7);
+      digitalWrite(11,v);
+      digitalWrite(10,v1);
+      break;
+  
+    case BUZZER:
+      v = mblockReadBuffer(6);
+      digitalWrite(13,v);
+      break;
+
+   
+    case SERVO_PIN:
+      val  =  mblockReadBuffer(6);
+      val1 =  mblockReadBuffer(7);
+      /*
+      if(val>=0&&val<=180&&val1>=0&&val1<=180)
+      {
+        servo3.attach(4); 
+        servo3.write(val); 
+        servo4.attach(12); 
+        servo4.write(val1); 
+      } 
+      */      
+      break;
+
+    case DIGITAL:
+      pinMode(pin,OUTPUT);
+      v = mblockReadBuffer(7);
+      digitalWrite(pin,v);
+      break;
+
+    case PWM:
+      pinMode(pin,OUTPUT);
+      v = mblockReadBuffer(7);
+      analogWrite(pin,v);
+      break;
+
+    case TONE:
+      pinMode(pin,OUTPUT);
+      hz = mblockReadShort(7);
+      ms = mblockReadShort(9);
+      if(ms>0)
+      {
+        tone(pin, hz, ms); 
+      }
+      else
+      {
+       noTone(pin); 
+      }
+      break;
+
+    case TIMER:
+      break;
+  }
 }

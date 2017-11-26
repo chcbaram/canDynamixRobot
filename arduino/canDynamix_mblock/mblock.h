@@ -2,34 +2,7 @@
 #define _MBLOCK_H_
 
 
-typedef struct MeModule
-{
-    int device;
-    int port;
-    int slot;
-    int pin;
-    int index;
-    float values[3];
-} MeModule;
 
-union
-{
-    uint8_t  byteVal[4];
-    float    floatVal;
-    uint32_t longVal;
-} val;
-
-union
-{
-  uint8_t byteVal[8];
-  double  doubleVal;
-} valDouble;
-
-union
-{
-  uint8_t  byteVal[2];
-  short    shortVal;
-} valShort;
 
 
 #define VERSION               0
@@ -42,7 +15,7 @@ union
 #define SOUND_SENSOR          7
 #define RGBLED                8
 #define SEVSEG                9
-#define MOTOR                 10
+#define MOTOR                 100 // for canDynamix
 #define SERVO                 11
 #define ENCODER               12
 #define IR                    13
@@ -91,6 +64,18 @@ typedef struct
 
 void mblockBegin(uint32_t baud);
 bool mblockUpdate(void);
+
+void mblockSetReadCallback(void (*func)(mblcok_packet_t *p_packet, uint8_t device));
+void mblockSetRunCallback(void (*func)(mblcok_packet_t *p_packet, uint8_t device));
+
+void  mblockSendByte(char c);
+void  mblockSendString(String s);
+void  mblockSendFloat(float value);
+void  mblockSendShort(double value);
+void  mblockSendDouble(double value);
+short mblockReadShort(int idx);
+float mblockReadFloat(int idx);
+uint8_t mblockReadBuffer(int index);
 
 #endif
 

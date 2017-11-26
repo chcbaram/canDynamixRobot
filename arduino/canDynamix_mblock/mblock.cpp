@@ -12,6 +12,37 @@
 
 
 
+typedef struct MeModule
+{
+    int device;
+    int port;
+    int slot;
+    int pin;
+    int index;
+    float values[3];
+} MeModule;
+
+union
+{
+    uint8_t  byteVal[4];
+    float    floatVal;
+    uint32_t longVal;
+} val;
+
+union
+{
+  uint8_t byteVal[8];
+  double  doubleVal;
+} valDouble;
+
+union
+{
+  uint8_t  byteVal[2];
+  short    shortVal;
+} valShort;
+
+
+
 void (*mblock_read_sensor_callback)(mblcok_packet_t *p_packet, uint8_t device) = NULL;
 void (*mblock_run_module_callback)(mblcok_packet_t *p_packet, uint8_t device) = NULL;
 
@@ -40,6 +71,86 @@ void mblockBegin(uint32_t baud)
 
   mblock_packet.state = 0;
 }
+
+void mblockSetReadCallback(void (*func)(mblcok_packet_t *p_packet, uint8_t device))
+{
+  mblock_read_sensor_callback = func;
+}
+
+void mblockSetRunCallback(void (*func)(mblcok_packet_t *p_packet, uint8_t device))
+{
+  mblock_run_module_callback = func;
+}
+
+static void writeSerial(unsigned char c)
+{
+  MBLOCK_SERIAL.write(c);
+}
+
+unsigned char mblockReadBuffer(int index)
+{
+  return mblock_packet.buffer[index]; 
+}
+
+void mblockSendByte(char c)
+{
+  writeSerial(1);
+  writeSerial(c);
+}
+
+void mblockSendString(String s)
+{
+  int l = s.length();
+  writeSerial(4);
+  writeSerial(l);
+  for(int i=0;i<l;i++)
+  {
+    writeSerial(s.charAt(i));
+  }
+}
+void mblockSendFloat(float value)
+{ 
+  writeSerial(0x2);
+  val.floatVal = value;
+  writeSerial(val.byteVal[0]);
+  writeSerial(val.byteVal[1]);
+  writeSerial(val.byteVal[2]);
+  writeSerial(val.byteVal[3]);
+}
+void mblockSendShort(double value)
+{
+  writeSerial(3);
+  valShort.shortVal = value;
+  writeSerial(valShort.byteVal[0]);
+  writeSerial(valShort.byteVal[1]);
+}
+void mblockSendDouble(double value)
+{
+  writeSerial(2);
+  valDouble.doubleVal = value;
+  writeSerial(valDouble.byteVal[0]);
+  writeSerial(valDouble.byteVal[1]);
+  writeSerial(valDouble.byteVal[2]);
+  writeSerial(valDouble.byteVal[3]);
+}
+
+short mblockReadShort(int idx)
+{
+  valShort.byteVal[0] = mblockReadBuffer(idx);
+  valShort.byteVal[1] = mblockReadBuffer(idx+1);
+  return valShort.shortVal; 
+}
+
+float mblockReadFloat(int idx)
+{
+  val.byteVal[0] = mblockReadBuffer(idx);
+  val.byteVal[1] = mblockReadBuffer(idx+1);
+  val.byteVal[2] = mblockReadBuffer(idx+2);
+  val.byteVal[3] = mblockReadBuffer(idx+3);
+  return val.floatVal;
+}
+
+
 
 bool mblockUpdate(void)
 {
