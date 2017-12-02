@@ -39,10 +39,10 @@ void setup()
   motor.on_time = 8000;
   motor.speed = 0;
   motor.pwm_out = 0;
-  motor.enc_pin[0] = 6;
-  motor.enc_pin[1] = 7;
-  motor.mot_pin[0] = 3;
-  motor.mot_pin[1] = 4;
+  motor.mot_pin[0] = 4;
+  motor.mot_pin[1] = 3;
+  motor.enc_pin[0] = 2;
+  motor.enc_pin[1] = 5;
 
   
   pinMode(motor.enc_pin[0], INPUT_PULLUP);
